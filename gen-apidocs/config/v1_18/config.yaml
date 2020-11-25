@@ -1,3 +1,10 @@
+included_objects:
+  # - "Deployment"
+  # - "ServiceAccount"
+  # - "ClusterRole"
+  # - "ClusterRoleBinding"
+  - "Namespace"
+  # - "DaemonSet"
 example_location: "examples"
 api_groups:
   - "AdmissionRegistration"

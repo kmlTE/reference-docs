@@ -194,6 +194,7 @@ func (s *Definitions) InitializeFields(d *Definition) {
 			Name:        fieldName,
 			Type:        GetTypeName(property),
 			Description: EscapeAsterisks(des),
+			Required:    containsRequiredField(d.RequiredFields, fieldName),
 		}
 		if len(property.Extensions) > 0 {
 			if ps, ok := property.Extensions.GetString(patchStrategyKey); ok {
@@ -209,6 +210,15 @@ func (s *Definitions) InitializeFields(d *Definition) {
 		}
 		d.Fields = append(d.Fields, f)
 	}
+}
+
+func containsRequiredField(required_fields []string, field string) bool {
+	for _, a := range required_fields {
+		if a == field {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Definition) GroupDisplayName() string {
@@ -301,6 +311,10 @@ func (d *Definition) GetSamples() []ExampleText {
 		})
 	}
 	return r
+}
+
+func (d *Definition) IsWrapper() bool {
+	return len(d.Fields) == 0
 }
 
 func (a DefinitionList) Len() int      { return len(a) }

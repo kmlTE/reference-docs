@@ -22,8 +22,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"gopkg.in/yaml.v2"
 
-	"github.com/kubernetes-sigs/reference-docs/gen-apidocs/generators/api"
+	"github.com/kmlTE/reference-docs/gen-apidocs/generators/api"
 )
 
 type Doc struct {
@@ -164,4 +165,51 @@ func writeStaticFile(title, location, defaultContent string) {
 	}
 	fmt.Fprintf(file, defaultContent)
 	file.Close()
+}
+
+func GenerateToscaYAML() {
+	// Load the yaml config
+	config := api.NewConfig()
+	//PrintToscaInfo(config)
+
+	tosca := &ToscaTypes{}
+	tosca.Version = "tosca_simple_yaml_1_3"
+	tosca.DataTypes = map[string]DataType{}
+	tosca.NodeTypes = map[string]NodeType{}
+
+	BuildToscaTypesFromDefinitions(config, tosca)
+
+	//DumpToscaYAML(tosca)
+
+	createToscaYAML(tosca)
+}
+
+func createToscaYAML(tosca *ToscaTypes) {
+	t, err := yaml.Marshal(&tosca)
+    if err != nil {
+        panic(err)
+    }
+
+    module_dir := "/tmp/kubernetes"
+    yaml_name := "kubernetes.yaml"
+    fn := filepath.Join(module_dir, yaml_name)
+
+    _, err = os.Stat(module_dir)
+    if os.IsNotExist(err) {
+		os.Mkdir(module_dir, os.FileMode(0700))
+	}
+
+	f, err := os.Create(fn)
+    if err != nil {
+        panic(err)
+    }
+
+    defer f.Close()
+
+    _, err = f.Write(t)
+    if err != nil {
+        panic(err)
+    }
+
+    f.Close()
 }

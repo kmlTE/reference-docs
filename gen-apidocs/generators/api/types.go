@@ -159,6 +159,7 @@ type Definition struct {
 	// Api version of the definition (e.g. v1beta1)
 	Version                 ApiVersion
 	Kind                    ApiKind
+	RawDescription 			string
 	DescriptionWithEntities string
 	GroupFullName           string
 
@@ -181,6 +182,9 @@ type Definition struct {
 	// Fields is a list of fields in this definition
 	Fields Fields
 
+	// List of required fields
+	RequiredFields []string
+
 	OtherVersions SortDefinitionsByName
 	NewerVersions SortDefinitionsByName
 
@@ -188,6 +192,9 @@ type Definition struct {
 
 	FullName string
 	Resource string
+
+	// Spec type
+	Type string
 }
 
 type GroupVersions map[string]ApiVersions
@@ -209,6 +216,9 @@ type Config struct {
 	OperationCategories []OperationCategory `yaml:"operation_categories,omitempty"`
 	ResourceCategories  []ResourceCategory  `yaml:"resource_categories,omitempty"`
 
+	// Includes only following object definitions
+	IncludedObjects  []string  `yaml:"included_objects,omitempty"`
+
 	// Used to map the group as the resource sees it to the group as the operation sees it
 	GroupMap map[string]string
 
@@ -228,6 +238,8 @@ type Field struct {
 
 	PatchStrategy string
 	PatchMergeKey string
+
+	Required bool
 }
 
 type Fields []*Field
@@ -250,6 +262,10 @@ func (f Field) FullLink() string {
 	} else {
 		return f.Type
 	}
+}
+
+func (f Field) HasComplexType() bool {
+	return f.Definition != nil
 }
 
 // Operation defines a highlevel operation type such as Read, Replace, Patch

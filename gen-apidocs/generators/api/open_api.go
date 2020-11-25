@@ -137,15 +137,29 @@ func LoadDefinitions(specs []*loads.Document, s *Definitions) {
 				full_group = group
 			}
 
+			required_fields := []string{"apiVersion", "kind", "metadata", "spec"} // kubernetes object required fields
+			if spec.Required != nil {
+				required_fields = append(required_fields, spec.Required...)
+			}
+
+			var spec_type string
+			for _, t := range spec.Type {
+				spec_type = t
+				break
+			}
+
 			d := &Definition{
-				schema:        spec,
-				Name:          kind,
-				Version:       ApiVersion(version),
-				Kind:          ApiKind(kind),
-				Group:         ApiGroup(group),
-				GroupFullName: full_group,
-				ShowGroup:     true,
-				Resource:      resource,
+				schema:        	spec,
+				Name:          	kind,
+				Version:       	ApiVersion(version),
+				Kind:          	ApiKind(kind),
+				RawDescription: spec.Description,
+				Group:         	ApiGroup(group),
+				GroupFullName: 	full_group,
+				ShowGroup:     	true,
+				Resource:      	resource,
+				RequiredFields:	required_fields,
+				Type:			spec_type,
 			}
 
 			s.All[d.Key()] = d

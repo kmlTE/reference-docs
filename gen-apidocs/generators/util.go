@@ -18,8 +18,10 @@ package generators
 
 import (
 	"fmt"
-	"github.com/kubernetes-sigs/reference-docs/gen-apidocs/generators/api"
+	"github.com/kmlTE/reference-docs/gen-apidocs/generators/api"
 	"strings"
+	"log"
+	"gopkg.in/yaml.v2"
 )
 
 func PrintInfo(config *api.Config) {
@@ -81,4 +83,58 @@ func PrintInfo(config *api.Config) {
 	//		}
 	//	}
 	//}
+}
+
+
+func PrintToscaInfo(config *api.Config) {
+	definitions := config.Definitions
+
+	fmt.Printf("-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n")
+
+	for _, kind := range config.IncludedObjects {
+		PrintDefitionInfo(definitions.ByKind[kind][0])
+	}
+	
+	fmt.Printf("-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n")
+}
+
+func PrintDefitionInfo(def *api.Definition) {
+	fmt.Printf("===\n")
+	fmt.Printf("[%s]\n", def.Name)
+	PrintFieldsInfo(def.Fields, 0)
+	fmt.Printf("RequiredFields: %+v\n", def.RequiredFields)
+	fmt.Printf("===\n")
+}
+
+func PrintFieldsInfo(fields api.Fields, indent int) {
+	tab := strings.Repeat("\t", indent)
+	for _, field := range fields {
+		fmt.Printf("%s---\n", tab)
+		fmt.Printf("%sName: %s\n", tab, field.Name)
+		fmt.Printf("%sType: %s\n", tab, field.Type)
+		fmt.Printf("%sComplex: %t\n", tab, field.HasComplexType())
+		fmt.Printf("%sRequired: %t\n", tab, field.Required)
+		fmt.Printf("%s---\n", tab)
+		if field.HasComplexType() {
+			fmt.Printf("%sRetrieve complex type for %s:\n", tab, field.Type)
+			if len(field.Definition.Fields) == 0 {
+				fmt.Printf("%sComplex type %s has no fields. Data type derived from %s:\n", tab, field.Type, field.Definition.Type)
+			} else {
+				PrintFieldsInfo(field.Definition.Fields, indent + 1)
+			}
+		}
+	}
+}
+
+func DumpToscaYAML(tosca *ToscaTypes) {
+
+	fmt.Printf("-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n")
+
+	t, err := yaml.Marshal(&tosca)
+    if err != nil {
+        log.Fatalf("error: %v", err)
+    }
+    fmt.Printf("--- tosca dump:\n%s\n\n", string(t))
+
+    fmt.Printf("-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n")
 }

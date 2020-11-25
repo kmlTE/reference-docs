@@ -19,10 +19,10 @@ package main
 import (
 	"flag"
 
-	"github.com/kubernetes-sigs/reference-docs/gen-apidocs/generators"
+	"github.com/kmlTE/reference-docs/gen-apidocs/generators"
 )
 
 func main() {
 	flag.Parse()
-	generators.GenerateFiles()
+	generators.GenerateToscaYAML()
 }

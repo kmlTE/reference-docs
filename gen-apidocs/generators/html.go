@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubernetes-sigs/reference-docs/gen-apidocs/generators/api"
+	"github.com/kmlTE/reference-docs/gen-apidocs/generators/api"
 )
 
 type TOCItem struct {
