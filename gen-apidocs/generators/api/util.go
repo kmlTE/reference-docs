@@ -51,7 +51,7 @@ func GetDefinitionVersionKind(s spec.Schema) (string, string, string) {
 		} else if name[len(name)-3] == "util" || name[len(name)-3] == "pkg" {
 			// e.g. io.k8s.apimachinery.pkg.util.intstr.IntOrString
 			// e.g. io.k8s.apimachinery.pkg.runtime.RawExtension
-			return "", "", ""
+			return "", "", name[len(name)-1]
 		} else {
 			panic(errors.New(fmt.Sprintf("Could not locate group for %s", name)))
 		}

@@ -88,6 +88,29 @@ func AddDefinitionToNodeTypes(def *api.Definition, tosca *ToscaTypes) {
 								Primary: "playbooks/create_kind_from_definition.yaml",
 							},
 						},
+						"delete": OperationDefinition{
+							Inputs: map[string]PropertyDefinition{
+								"kubeconfig": PropertyDefinition{
+									Type: "string",
+									Default: Assignment{
+										ToscaFunction: map[string][]string{
+											"get_property": []string{"SELF", "host", "kubeconfig"},
+										},
+									},
+								},
+								DefinitionProperty: PropertyDefinition{
+									Type: "map",
+									Default: Assignment{
+										ToscaFunction: map[string][]string{
+											"get_property": []string{"SELF", DefinitionProperty},
+										},
+									},
+								},
+							},
+							Implementation: ImplementationDefinition{
+								Primary: "playbooks/delete_kind_from_definition.yaml",
+							},
+						},
 					},
 				},
 			},
@@ -197,12 +220,18 @@ const ToscaMap = "map"
 const SpecArray = "array"
 const SpecArraySeparator = " " + SpecArray
 const SpecMap = "object"
+const SpecIntOrString = "IntOrString"
+const SpecRawExtension = "RawExtension"
 
 func GetToscaTypeFromSpec(spec_type string) string {
 	switch spec_type {
     case SpecArray:
         return ToscaArray
     case SpecMap:
+        return ToscaMap
+    case SpecIntOrString:
+        return "string"
+    case SpecRawExtension:
         return ToscaMap
     default:
         return spec_type
