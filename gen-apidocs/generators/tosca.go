@@ -52,28 +52,52 @@ func AddDefinitionToNodeTypes(def *api.Definition, tosca *ToscaTypes) {
 			DerivedFrom: NodeTypeBase,
 			Description: GetDescription(def.RawDescription),
 			Properties: GetNodeTypeProperties(GetDataTypeName(def.Name)),
+			Requirements: []map[string]RequirementDefinition{
+				{
+					"host": RequirementDefinition{
+						Capability: HostReqCapability,
+						Node: HostReqNode,
+						Relationship: HostReqRelationship,
+					},
+				},
+			},
+			Interfaces: map[string]InterfaceDefinition{
+				"Standard": InterfaceDefinition{
+					Type: InterfaceType,
+					Operations: map[string]OperationDefinition{
+						"create": OperationDefinition{
+							Inputs: map[string]PropertyDefinition{
+								"kubeconfig": PropertyDefinition{
+									Type: "string",
+									Default: Assignment{
+										ToscaFunction: map[string][]string{
+											"get_property": []string{"SELF", "host", "kubeconfig"},
+										},
+									},
+								},
+								DefinitionProperty: PropertyDefinition{
+									Type: "map",
+									Default: Assignment{
+										ToscaFunction: map[string][]string{
+											"get_property": []string{"SELF", DefinitionProperty},
+										},
+									},
+								},
+							},
+							Implementation: ImplementationDefinition{
+								Primary: "playbooks/create_kind_from_definition.yaml",
+							},
+						},
+					},
+				},
+			},
 		}
 	}
 }
 
 func AddDefinitionToToscaTypes(def *api.Definition, tosca *ToscaTypes) {
-	if def.IsWrapper() { // for wrapper add only to tosca data types
-		tosca.DataTypes[GetDataTypeName(def.Name)] = DataType{
-			DerivedFrom: GetToscaTypeFromSpec(def.Type),
-			Description: GetDescription(def.RawDescription),
-		}
-	} else {
-		tosca.DataTypes[GetDataTypeName(def.Name)] = DataType{
-			DerivedFrom: DataTypeBase,
-			Description: GetDescription(def.RawDescription),
-			Properties: GetDataTypeProperties(def.Fields),
-		}
-		tosca.NodeTypes[GetNodeTypeName(def.Name)] = NodeType{
-			DerivedFrom: NodeTypeBase,
-			Description: GetDescription(def.RawDescription),
-			Properties: GetNodeTypeProperties(GetDataTypeName(def.Name)),
-		}
-	}
+	AddDefinitionToDataTypes(def, tosca)
+	AddDefinitionToNodeTypes(def, tosca)
 }
 
 func PopulateToscaTypesFromComplexFields(fields api.Fields, tosca *ToscaTypes) {
@@ -120,7 +144,7 @@ func GetDataTypeProperties(fields api.Fields) map[string]PropertyDefinition {
 		properties[field.Name] = PropertyDefinition{
 			Type: field_type,
 			Description: GetDescription(field.Description),
-			Required: field.Required,
+			Required: &field.Required,
 			EntrySchema: entry_schema,
 		}
 	}
@@ -128,11 +152,12 @@ func GetDataTypeProperties(fields api.Fields) map[string]PropertyDefinition {
 }
 
 func GetNodeTypeProperties(dt_name string) map[string]PropertyDefinition {
+	required := true
 	return map[string]PropertyDefinition{
-		"definition": PropertyDefinition{
+		DefinitionProperty: PropertyDefinition{
 			Type: ToscaMap,
 			Description: "Full definition can be found in " + dt_name,
-			Required: true,
+			Required: &required,
 			EntrySchema: EntrySchemaDefinition{
 				Type: dt_name,
 			},
@@ -156,10 +181,10 @@ func GetEntrySchema(t string) string {
 }
 
 func GetDescription(d string) string {
-	n := 20
-	if len(d) > n {
-		return d[:n]
-	}
+	// n := 20
+	// if len(d) > n {
+	// 	return d[:n]
+	// }
 	return d
 }
 
@@ -186,6 +211,12 @@ func GetToscaTypeFromSpec(spec_type string) string {
 
 // data types
 const DataTypeBase = "sodalite.datatypes.Kubernetes.Kind"
+const NodeTypeBase = "sodalite.nodes.Kubernetes.Kind"
+const HostReqCapability = "tosca.capabilities.Compute"
+const HostReqNode = "sodalite.nodes.Kubernetes.Cluster"
+const HostReqRelationship = "tosca.relationships.HostedOn"
+const DefinitionProperty = "definition"
+const InterfaceType = "tosca.interfaces.node.lifecycle.Standard"
 
 func GetDataTypeName(n string) string {
 	return string(DataTypeBase + "." + n)
@@ -198,8 +229,6 @@ type DataType struct {
 }
 
 // node types
-const NodeTypeBase = "sodalite.nodes.Kubernetes.Kind"
-
 func GetNodeTypeName(n string) string {
 	return string(NodeTypeBase + "." + n)
 }
@@ -208,10 +237,8 @@ type NodeType struct {
 	DerivedFrom  string                             `yaml:"derived_from,omitempty"`
 	Description  string                             `yaml:"description,omitempty"`
 	Properties   map[string]PropertyDefinition      `yaml:"properties,omitempty"`
-	// Requirements []map[string]RequirementDefinition `yaml:"requirements,omitempty"`
-	// Capabilities map[string]CapabilityDefinition    `yaml:"capabilities,omitempty"`
-	// Attributes   map[string]AttributeDefinition     `yaml:"attributes,omitempty"`
-	// Interfaces   map[string]InterfaceDefinition     `yaml:"interfaces,omitempty"`
+	Requirements []map[string]RequirementDefinition `yaml:"requirements,omitempty"`
+	Interfaces   map[string]InterfaceDefinition     `yaml:"interfaces,omitempty"`
 }
 
 type EntrySchemaDefinition struct {
@@ -221,9 +248,35 @@ type EntrySchemaDefinition struct {
 type PropertyDefinition struct {
 	Type        string             		`yaml:"type"`
 	Description string             		`yaml:"description,omitempty"`
-	Required    bool               		`yaml:"required"`
-	Default     string             		`yaml:"default,omitempty"`
+	Required    *bool               	`yaml:"required,omitempty"`
+	Default     Assignment             	`yaml:"default,omitempty,flow"`
 	EntrySchema EntrySchemaDefinition	`yaml:"entry_schema,omitempty"`
+}
+
+type RequirementDefinition struct {
+	Capability   string `yaml:"capability"`
+	Node         string `yaml:"node,omitempty"`
+	Relationship string `yaml:"relationship"`
+}
+
+type InterfaceDefinition struct {
+	Type       string                         `yaml:"type"`
+	Operations map[string]OperationDefinition `yaml:"operations"`
+}
+
+type OperationDefinition struct {
+	Inputs         map[string]PropertyDefinition `yaml:"inputs,omitempty"`
+	Implementation ImplementationDefinition		 `yaml:"implementation,omitempty"`
+}
+
+type ImplementationDefinition struct {
+	Primary string	`yaml:"primary,omitempty"`
+}
+
+// TODO: make it more elegant to accept values of various types
+type Assignment struct {
+	StringValue   string 				`yaml:"value,omitempty"`
+	ToscaFunction map[string][]string 	`yaml:"value,inline,omitempty"`
 }
 
 type ToscaTypes struct {

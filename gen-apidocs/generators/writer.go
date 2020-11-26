@@ -191,7 +191,7 @@ func createToscaYAML(tosca *ToscaTypes) {
     }
 
     module_dir := "/tmp/kubernetes"
-    yaml_name := "kubernetes.yaml"
+    yaml_name := "kubernetes_definitions.yaml"
     fn := filepath.Join(module_dir, yaml_name)
 
     _, err = os.Stat(module_dir)
